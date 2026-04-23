@@ -14,12 +14,18 @@ interface DealRow extends RowDataPacket {
 export async function GET() {
   try {
     const db = getDbPool();
-    const [rows] = await db.query<DealRow[]>(`SELECT * FROM Deals ORDER BY id DESC`);
 
-    return NextResponse.json({ data: rows });
+    const [rows] = await db.query<DealRow[]>(
+      `SELECT id, clientName, propertyId, stage, value, commission
+       FROM deals
+       ORDER BY id DESC`
+    );
+
+    return NextResponse.json(rows); // ✅ return direct array
   } catch (error) {
+    console.error(error);
     return NextResponse.json(
-      { error: 'Failed to fetch deals', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to fetch deals' },
       { status: 500 }
     );
   }
@@ -28,11 +34,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { clientName, propertyId, value } = body as {
-      clientName?: string;
-      propertyId?: number;
-      value?: number;
-    };
+    const { clientName, propertyId, value } = body;
 
     if (!clientName || !propertyId || typeof value !== 'number') {
       return NextResponse.json(
@@ -42,18 +44,25 @@ export async function POST(request: NextRequest) {
     }
 
     const db = getDbPool();
+
     const [result] = await db.query<ResultSetHeader>(
-      `INSERT INTO Deals (clientName, propertyId, stage, value, commission)
+      `INSERT INTO deals (clientName, propertyId, stage, value, commission)
        VALUES (?, ?, 'Negotiation', ?, 0)`,
       [clientName.trim(), propertyId, value]
     );
 
-    const [rows] = await db.query<DealRow[]>(`SELECT * FROM Deals WHERE id = ?`, [result.insertId]);
+    const [rows] = await db.query<DealRow[]>(
+      `SELECT id, clientName, propertyId, stage, value, commission
+       FROM deals
+       WHERE id = ?`,
+      [result.insertId]
+    );
 
-    return NextResponse.json({ data: rows[0] }, { status: 201 });
+    return NextResponse.json(rows[0], { status: 201 }); // ✅ no "data"
   } catch (error) {
+    console.error(error);
     return NextResponse.json(
-      { error: 'Failed to create deal', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to create deal' },
       { status: 500 }
     );
   }

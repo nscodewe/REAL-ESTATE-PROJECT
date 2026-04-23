@@ -7,22 +7,23 @@ interface PropertyRow extends RowDataPacket {
   title: string;
   location: string;
   price: number;
-  type: string;
 }
 
 export async function GET() {
   try {
     const db = getDbPool();
+
     const [rows] = await db.query<PropertyRow[]>(
-      `SELECT *
-       FROM Properties
+      `SELECT id, title, location, price
+       FROM properties
        ORDER BY id DESC`
     );
 
-    return NextResponse.json({ data: rows });
+    return NextResponse.json(rows); // ✅ return direct array
   } catch (error) {
+    console.error(error);
     return NextResponse.json(
-      { error: 'Failed to fetch properties', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to fetch properties' },
       { status: 500 }
     );
   }
@@ -31,36 +32,35 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, location, price, type } = body as {
-      title?: string;
-      location?: string;
-      price?: number;
-      type?: string;
-    };
+    const { title, location, price } = body;
 
-    if (!title || !location || typeof price !== 'number' || !type) {
+    if (!title || !location || typeof price !== 'number') {
       return NextResponse.json(
-        { error: 'title, location, price, and type are required' },
+        { error: 'title, location, and price are required' },
         { status: 400 }
       );
     }
 
     const db = getDbPool();
+
     const [result] = await db.query<ResultSetHeader>(
-      `INSERT INTO Properties (title, location, price, type)
-       VALUES (?, ?, ?, ?)`,
-      [title.trim(), location.trim(), price, type.trim()]
+      `INSERT INTO properties (title, location, price)
+       VALUES (?, ?, ?)`,
+      [title.trim(), location.trim(), price]
     );
 
     const [rows] = await db.query<PropertyRow[]>(
-      `SELECT * FROM Properties WHERE id = ?`,
+      `SELECT id, title, location, price
+       FROM properties
+       WHERE id = ?`,
       [result.insertId]
     );
 
-    return NextResponse.json({ data: rows[0] }, { status: 201 });
+    return NextResponse.json(rows[0], { status: 201 });
   } catch (error) {
+    console.error(error);
     return NextResponse.json(
-      { error: 'Failed to create property', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to create property' },
       { status: 500 }
     );
   }
