@@ -20,7 +20,7 @@ async function fetchLeads(status: string | null, page: number, pageSize: number)
 
   const [rows] = await db.query<LeadRow[]>(
     `SELECT *
-     FROM Leads
+     FROM leads
      ${whereClause}
      ORDER BY id DESC
      LIMIT ? OFFSET ?`,
@@ -28,7 +28,7 @@ async function fetchLeads(status: string | null, page: number, pageSize: number)
   );
 
   const [countRows] = await db.query<RowDataPacket[]>(
-    `SELECT COUNT(*) AS total FROM Leads ${whereClause}`,
+    `SELECT COUNT(*) AS total FROM leads ${whereClause}`,
     params
   );
 
@@ -73,13 +73,13 @@ export async function POST(request: NextRequest) {
 
     const db = getDbPool();
     const [result] = await db.query<ResultSetHeader>(
-      `INSERT INTO Leads (name, phone, email, budget, status, assignedTo)
+      `INSERT INTO leads (name, phone, email, budget, status, assignedTo)
        VALUES (?, ?, ?, ?, 'New', NULL)`,
       [name.trim(), phone.trim(), email.trim(), budget ?? null]
     );
 
     const [rows] = await db.query<LeadRow[]>(
-      `SELECT * FROM Leads WHERE id = ?`,
+      `SELECT * FROM leads WHERE id = ?`,
       [result.insertId]
     );
     try{

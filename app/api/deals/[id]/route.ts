@@ -60,7 +60,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
 
     if (stage === 'Closed') {
       await db.query<ResultSetHeader>(
-        `UPDATE Leads SET status = 'Closed' WHERE LOWER(name) = LOWER(?)`,
+        `UPDATE leads SET status = 'Closed' WHERE LOWER(name) = LOWER(?)`,
         [existing.clientName]
       );
     }

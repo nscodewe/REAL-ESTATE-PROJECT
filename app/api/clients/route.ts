@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       }
 
       const [leadRows] = await connection.query<LeadRow[]>(
-        `SELECT id, name, phone, email FROM Leads WHERE id = ?`,
+          `SELECT id, name, phone, email FROM leads WHERE id = ?`,
         [leadId]
       );
 

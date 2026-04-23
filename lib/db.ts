@@ -13,13 +13,13 @@ function getRequiredEnv(name: string): string {
 export function getDbPool(): Pool {
   if (!pool) {
     pool = mysql.createPool({
-      host: getRequiredEnv('DB_HOST'),
-      user: getRequiredEnv('DB_USER'),
-      password: getRequiredEnv('DB_PASSWORD'),
-      database: process.env.DB_NAME || 'crm_db',
-      port: Number(process.env.DB_PORT || 3306),
+      host: process.env.DB_HOST,
+      port: Number(process.env.DB_PORT),
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
       waitForConnections: true,
-      connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 10),
+      connectionLimit: 10,
       queueLimit: 0,
     });
   }

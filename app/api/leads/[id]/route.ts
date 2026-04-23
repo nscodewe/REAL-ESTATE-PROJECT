@@ -54,7 +54,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
 
     const db = getDbPool();
     const [result] = await db.query<ResultSetHeader>(
-      `UPDATE Leads SET ${updates.join(', ')} WHERE id = ?`,
+      `UPDATE leads SET ${updates.join(', ')} WHERE id = ?`,
       [...values, id]
     );
 
@@ -63,7 +63,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     }
 
     const [rows] = await db.query<LeadRow[]>(
-      `SELECT * FROM Leads WHERE id = ?`,
+      `SELECT * FROM leads WHERE id = ?`,
       [id]
     );
 
@@ -85,7 +85,7 @@ export async function DELETE(_request: NextRequest, context: { params: Promise<{
     }
 
     const db = getDbPool();
-    const [result] = await db.query<ResultSetHeader>(`DELETE FROM Leads WHERE id = ?`, [id]);
+    const [result] = await db.query<ResultSetHeader>(`DELETE FROM leads WHERE id = ?`, [id]);
 
     if (result.affectedRows === 0) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
