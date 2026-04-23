@@ -42,6 +42,14 @@ type Agent = {
   email: string | null;
 };
 
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
+function buildApiUrl(path: string): string {
+  const normalizedBase = BASE_URL.replace(/\/$/, '');
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${normalizedBase}${normalizedPath}`;
+}
+
 const statusOptions = ['New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Closed', 'Lost'];
 
 const statusStyles: Record<string, string> = {
@@ -84,25 +92,29 @@ export default function LeadsPage() {
     try {
       const query = statusFilter !== 'all' ? `?status=${encodeURIComponent(statusFilter)}` : '';
       const [leadsResponse, propertiesResponse, dealsResponse, agentsResponse] = await Promise.all([
-        fetch(`/api/leads${query}`),
-        fetch('/api/properties'),
-        fetch('/api/deals'),
-        fetch('/api/agents'),
+        fetch(buildApiUrl(`/api/leads${query}`)),
+        fetch(buildApiUrl('/api/properties')),
+        fetch(buildApiUrl('/api/deals')),
+        fetch(buildApiUrl('/api/agents')),
       ]);
 
       if (!leadsResponse.ok) {
         const payload = await leadsResponse.json().catch(() => ({}));
-        throw new Error(payload.error || 'Failed to load leads');
+        throw new Error(
+          payload?.details || payload?.error || `Failed to load leads (HTTP ${leadsResponse.status})`
+        );
       }
 
       if (!propertiesResponse.ok) {
         const payload = await propertiesResponse.json().catch(() => ({}));
-        throw new Error(payload.error || 'Failed to load properties');
+        throw new Error(
+          payload?.details || payload?.error || `Failed to load properties (HTTP ${propertiesResponse.status})`
+        );
       }
 
       if (!dealsResponse.ok) {
         const payload = await dealsResponse.json().catch(() => ({}));
-        throw new Error(payload.error || 'Failed to load deals');
+        throw new Error(payload?.details || payload?.error || `Failed to load deals (HTTP ${dealsResponse.status})`);
       }
 
       const payload = await leadsResponse.json();
@@ -136,7 +148,13 @@ export default function LeadsPage() {
       setEditableRows(nextEditableRows);
       setConversionRows(nextConversionRows);
     } catch (fetchError) {
-      setError(fetchError instanceof Error ? fetchError.message : 'Failed to load leads');
+      const message = fetchError instanceof Error ? fetchError.message : 'Failed to load leads';
+      console.error('Error fetching leads page data', {
+        message,
+        statusFilter,
+        baseUrl: BASE_URL || '(relative)',
+      });
+      setError(`Failed to fetch leads: ${message}`);
     } finally {
       setLoading(false);
     }
@@ -181,7 +199,7 @@ export default function LeadsPage() {
 
     setSaving(true);
     try {
-      const response = await fetch('/api/leads', {
+      const response = await fetch(buildApiUrl('/api/leads'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -215,7 +233,7 @@ export default function LeadsPage() {
 
     setSaving(true);
     try {
-      const response = await fetch(`/api/leads/${leadId}`, {
+      const response = await fetch(buildApiUrl(`/api/leads/${leadId}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -243,7 +261,7 @@ export default function LeadsPage() {
   const handleDeleteLead = async (leadId: number) => {
     setSaving(true);
     try {
-      const response = await fetch(`/api/leads/${leadId}`, {
+      const response = await fetch(buildApiUrl(`/api/leads/${leadId}`), {
         method: 'DELETE',
       });
 
@@ -273,7 +291,7 @@ export default function LeadsPage() {
 
     setSaving(true);
     try {
-      const response = await fetch(`/api/leads/${leadId}`, {
+      const response = await fetch(buildApiUrl(`/api/leads/${leadId}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -301,7 +319,7 @@ export default function LeadsPage() {
   const handleMarkContacted = async (leadId: number) => {
     setSaving(true);
     try {
-      const response = await fetch(`/api/leads/${leadId}`, {
+      const response = await fetch(buildApiUrl(`/api/leads/${leadId}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -340,7 +358,7 @@ export default function LeadsPage() {
 
     setConvertingLeadId(lead.id);
     try {
-      const dealResponse = await fetch('/api/deals', {
+      const dealResponse = await fetch(buildApiUrl('/api/deals'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -357,7 +375,7 @@ export default function LeadsPage() {
         throw new Error(payload.error || 'Failed to convert lead to deal');
       }
 
-      const leadResponse = await fetch(`/api/leads/${lead.id}`, {
+      const leadResponse = await fetch(buildApiUrl(`/api/leads/${lead.id}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

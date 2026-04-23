@@ -33,6 +33,14 @@ type Lead = {
   assignedTo: string | null;
 };
 
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
+function buildApiUrl(path: string): string {
+  const normalizedBase = BASE_URL.replace(/\/$/, '');
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${normalizedBase}${normalizedPath}`;
+}
+
 const stageOptions: Array<Deal['stage']> = ['Negotiation', 'Agreement', 'Closed'];
 
 const stageStyles: Record<Deal['stage'], string> = {
@@ -62,9 +70,9 @@ export default function DealsPage() {
 
     try {
       const [dealsRes, propertiesRes, leadsRes] = await Promise.all([
-        fetch('/api/deals'),
-        fetch('/api/properties'),
-        fetch('/api/leads'),
+        fetch(buildApiUrl('/api/deals')),
+        fetch(buildApiUrl('/api/properties')),
+        fetch(buildApiUrl('/api/leads')),
       ]);
 
       if (!dealsRes.ok) {
@@ -79,7 +87,7 @@ export default function DealsPage() {
 
       if (!leadsRes.ok) {
         const payload = await leadsRes.json().catch(() => ({}));
-        throw new Error(payload.error || 'Failed to load leads');
+        throw new Error(payload?.details || payload?.error || `Failed to load leads (HTTP ${leadsRes.status})`);
       }
 
       const dealsPayload = await dealsRes.json();
@@ -97,7 +105,12 @@ export default function DealsPage() {
       });
       setStageSelections(nextStages);
     } catch (fetchError) {
-      setError(fetchError instanceof Error ? fetchError.message : 'Failed to load deals');
+      const message = fetchError instanceof Error ? fetchError.message : 'Failed to load deals';
+      console.error('Error fetching deals page data', {
+        message,
+        baseUrl: BASE_URL || '(relative)',
+      });
+      setError(`Failed to fetch leads/deals data: ${message}`);
     } finally {
       setLoading(false);
     }
@@ -162,7 +175,7 @@ export default function DealsPage() {
 
     setSaving(true);
     try {
-      const response = await fetch('/api/deals', {
+      const response = await fetch(buildApiUrl('/api/deals'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -198,7 +211,7 @@ export default function DealsPage() {
 
     setSaving(true);
     try {
-      const response = await fetch(`/api/deals/${dealId}`, {
+      const response = await fetch(buildApiUrl(`/api/deals/${dealId}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
